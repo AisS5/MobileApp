@@ -1,6 +1,18 @@
 import 'package:flutter/material.dart';
 
+class CatLadyPlayer{
+  String name; 
+  int catScore = 0;
+  int toyScore = 0;
+  int catnipScore = 0;
+  int costumeScore = 0;
+  int penaltyScore = 0;
 
+  CatLadyPlayer({required this.name});
+
+  int get totalScore => catScore + toyScore + catnipScore + costumeScore - penaltyScore;
+
+}
 
 class CatLadyScreen extends StatefulWidget {
   const CatLadyScreen({super.key});
@@ -10,15 +22,50 @@ class CatLadyScreen extends StatefulWidget {
 }
 
 class _CatLadyScreenState extends State<CatLadyScreen> {
+  
+  List<CatLadyPlayer> players = [CatLadyPlayer(name: 'Player 1')];
 
-  int catScore = 0;
-  int toyScore = 0;
-  int catnipScore = 0;
-  int costumeScore = 0;
-  int penaltyScore = 0;
+  final PageController _pageController = PageController();
+  final TextEditingController _nameController = TextEditingController();
+ 
 
-  int get totalScore => catScore + toyScore + catnipScore + costumeScore - penaltyScore;
+  void _addPlayer(){
+      showDialog(
+        context: context, 
+        builder: (context) => AlertDialog(
+          title: const Text('Add Player'),
+          content: TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(hintText: 'Player Name'),
+            textCapitalization: TextCapitalization.words,
+          ),
+          actions: [
+            TextButton(
+              onPressed: (){
+                if (_nameController.text.trim().isNotEmpty){
+                  setState((){
+                    players.add(CatLadyPlayer(name: _nameController.text.trim()));
+                    _nameController.clear();
+                  });
 
+                  Navigator.pop(context);
+
+                  Future.delayed(const Duration(milliseconds: 100), (){
+                    _pageController.animateToPage(
+                      players.length - 1,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  });
+                }
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+        
+      );
+  }
 
   Widget _buildScoreRow(String title, int currentValue, Function(int) onChanged){
     return Padding(
@@ -58,39 +105,71 @@ class _CatLadyScreenState extends State<CatLadyScreen> {
       appBar: AppBar(
         title: const Text('Cat Lady Score'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add),
+            onPressed: _addPlayer,
+            tooltip: 'Add Player',
+          )
+        ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            _buildScoreRow('Fed Cats', catScore, (change) {
-              setState(() => catScore += change);
-            }),
-            _buildScoreRow('Toys', toyScore, (change) {
-              setState(() => toyScore += change);
-            }),
-            _buildScoreRow('Catnip', catnipScore, (change) {
-              setState(() => catnipScore += change);
-            }),
-            _buildScoreRow('Costumes', costumeScore, (change) {
-              setState(() => costumeScore += change);
-            }),
-            const Divider(), 
-            _buildScoreRow('Penalties', penaltyScore, (change) {
-              if (penaltyScore + change >= 0) {
-                setState(() => penaltyScore += change);
-              }
-            }),
-          const Divider(),
-          const SizedBox(height: 40,),
-          const Text('Total Score', style: TextStyle(fontSize: 24, color: Colors.grey)),
-            Text(
-              '$totalScore',
-              style: const TextStyle(fontSize: 60, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+      body: PageView.builder(
+        controller: _pageController,
+        itemCount: players.length,
+        itemBuilder: (context, index) {
+          CatLadyPlayer currentPlayer = players[index];
+
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+
+                Text(
+                  currentPlayer.name,
+                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                ),
+
+                Text(
+                  'Player ${index + 1} of ${players.length} (Swipe ↔)', 
+                  style: const TextStyle(color: Colors.grey)
+                ),
+
+                const SizedBox(height: 20),
+                _buildScoreRow('Fed Cats', currentPlayer.catScore, (change) {
+                  setState(() => currentPlayer.catScore += change);
+                }),
+                _buildScoreRow('Toys', currentPlayer.toyScore, (change) {
+                  setState(() => currentPlayer.toyScore += change);
+                }),
+                _buildScoreRow('Catnip', currentPlayer.catnipScore, (change) {
+                  setState(() => currentPlayer.catnipScore += change);
+                }),
+                _buildScoreRow('Costumes', currentPlayer.costumeScore, (change) {
+                  setState(() => currentPlayer.costumeScore += change);
+                }),
+                const Divider(), 
+                _buildScoreRow('Penalties', currentPlayer.penaltyScore, (change) {
+                  if (currentPlayer.penaltyScore + change >= 0) {
+                    setState(() => currentPlayer.penaltyScore += change);
+                  }
+                }),
+                const SizedBox(height: 40,),
+                const Text('Total Score', style: TextStyle(fontSize: 24, color: Colors.grey)),
+                Text(
+                  '${currentPlayer.totalScore}',
+                  style: const TextStyle(fontSize: 60, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },  
      ),
+     floatingActionButton: FloatingActionButton.extended(
+        onPressed: _addPlayer,
+        icon: const Icon(Icons.add),
+        label: const Text('Player'),
+        backgroundColor: Colors.orange.shade300,
+      ),
     );
   }
 
