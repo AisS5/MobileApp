@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'game_model.dart';
 import 'cat_lady.dart';
 
 void main() {
   runApp(const MyApp());
 }
+
+
+class AppScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+      };
+}
+
 
 
 const List<Game> games = [
@@ -21,6 +33,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Score Tracker',
+      scrollBehavior: AppScrollBehavior(),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,

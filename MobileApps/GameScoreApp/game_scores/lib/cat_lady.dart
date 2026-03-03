@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+
 class CatLadyPlayer{
   String name; 
   int catScore = 0;
@@ -13,6 +14,7 @@ class CatLadyPlayer{
   int get totalScore => catScore + toyScore + catnipScore + costumeScore - penaltyScore;
 
 }
+
 
 class CatLadyScreen extends StatefulWidget {
   const CatLadyScreen({super.key});
@@ -127,11 +129,6 @@ class _CatLadyScreenState extends State<CatLadyScreen> {
                 Text(
                   currentPlayer.name,
                   style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.deepPurple),
-                ),
-
-                Text(
-                  'Player ${index + 1} of ${players.length} (Swipe ↔)', 
-                  style: const TextStyle(color: Colors.grey)
                 ),
 
                 const SizedBox(height: 20),
