@@ -4,12 +4,45 @@ import 'package:flutter/material.dart';
 class CatLadyPlayer{
   String name; 
   int catScore = 0;
-  int toyScore = 0;
   int catnipScore = 0;
   int costumeScore = 0;
   int penaltyScore = 0;
 
+  Map<String, int> toyCount = {
+    'Mouse': 0,
+    'Cat Yarn': 0,
+    'Cat Tower': 0,
+    'Laser Pointer': 0,
+    'Feather Wand': 0,
+  };
+
   CatLadyPlayer({required this.name});
+  
+  int get toyScore {
+    const points = {
+      0: 0,
+      1: 1,
+      2: 3,
+      3: 5,
+      4: 7,
+      5: 12,
+    };
+    List<int> count = toyCount.values.toList();
+    int totalToyScore = 0;
+
+    while(count.any((c) => c > 0)){
+      int uniqueToys = 0;
+
+      for (int i = 0; i < count.length; i++){
+        if (count[i] > 0){
+          uniqueToys++;
+          count[i]--;
+        }
+      }
+      totalToyScore += points[uniqueToys] ?? 0;
+    }
+    return totalToyScore;
+  }
 
   int get totalScore => catScore + toyScore + catnipScore + costumeScore - penaltyScore;
 
@@ -68,6 +101,79 @@ class _CatLadyScreenState extends State<CatLadyScreen> {
         
       );
   }
+
+  void _toysDialog(CatLadyPlayer player){
+    showDialog(
+     context: context, 
+     builder: (context) {
+      return StatefulBuilder(
+        builder : (context, setDialogState){
+          return AlertDialog(
+            title: Column(
+              children: [
+                const Text('TOYS'),
+                Text(
+                  '+${player.toyScore} points',
+                  style: const TextStyle(color: Colors.deepPurple, fontSize: 24, fontWeight: FontWeight.bold)
+                ),
+              ]
+            ),
+            content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: player.toyCount.keys.map((toyName) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(toyName, style: const TextStyle(fontSize: 16)),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle, color: Colors.redAccent),
+                                onPressed: () {
+                                  if (player.toyCount[toyName]! > 0) {
+     
+                                    setDialogState(() => player.toyCount[toyName] = player.toyCount[toyName]! - 1);
+
+                                    setState(() {});
+                                  }
+                                },
+                              ),
+                              SizedBox(
+                                width: 24,
+                                child: Text('${player.toyCount[toyName]}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 18)),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle, color: Colors.green),
+                                onPressed: () {
+                                  setDialogState(() => player.toyCount[toyName] = player.toyCount[toyName]! + 1);
+                                  setState(() {});
+                                },
+                              ),
+                            ],
+                          )
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Done'),
+                ),
+              ],
+            );
+          }
+        );
+      }
+    );
+  }
+
+
 
   Widget _buildScoreRow(String title, int currentValue, Function(int) onChanged){
     return Padding(
@@ -132,20 +238,35 @@ class _CatLadyScreenState extends State<CatLadyScreen> {
                 ),
 
                 const SizedBox(height: 20),
-                _buildScoreRow('Fed Cats', currentPlayer.catScore, (change) {
+                _buildScoreRow('Fed Cats  (+${currentPlayer.catScore} pts)', currentPlayer.catScore, (change) {
                   setState(() => currentPlayer.catScore += change);
                 }),
-                _buildScoreRow('Toys', currentPlayer.toyScore, (change) {
-                  setState(() => currentPlayer.toyScore += change);
-                }),
-                _buildScoreRow('Catnip', currentPlayer.catnipScore, (change) {
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Toys (+${currentPlayer.toyScore} pts)', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+                      ElevatedButton.icon(
+                        onPressed: () => _toysDialog(currentPlayer),
+                        icon: const Icon(Icons.edit, size: 18),
+                        label: const Text('Add Toys'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(255, 223, 224, 207),
+                          elevation: 0,
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+                _buildScoreRow('Catnip  (+${currentPlayer.catnipScore} pts)', currentPlayer.catnipScore, (change) {
                   setState(() => currentPlayer.catnipScore += change);
                 }),
-                _buildScoreRow('Costumes', currentPlayer.costumeScore, (change) {
+                _buildScoreRow('Costumes  (+${currentPlayer.costumeScore} pts)', currentPlayer.costumeScore, (change) {
                   setState(() => currentPlayer.costumeScore += change);
                 }),
                 const Divider(), 
-                _buildScoreRow('Penalties', currentPlayer.penaltyScore, (change) {
+                _buildScoreRow('Penalties  (-${currentPlayer.penaltyScore} pts)', currentPlayer.penaltyScore, (change) {
                   if (currentPlayer.penaltyScore + change >= 0) {
                     setState(() => currentPlayer.penaltyScore += change);
                   }
