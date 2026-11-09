@@ -706,7 +706,6 @@ class _CatLadyScreenState extends State<CatLadyScreen> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            const Icon(Icons.edit, size: 20, color: Colors.grey),
                           ],
                         ),
                       ),
@@ -826,12 +825,6 @@ class _CatLadyScreenState extends State<CatLadyScreen> {
             ),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _addPlayer,
-        icon: const Icon(Icons.add),
-        label: const Text('Player'),
-        backgroundColor: Colors.orange.shade300,
       ),
     );
   }
