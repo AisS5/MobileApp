@@ -2,9 +2,27 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'game_model.dart';
 import 'cat_lady.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Supabase.initialize(
+    //url: 'http://10.0.2.2:54321',
+    //url: 'https://wbvdhxzjcmzlsohsderr.supabase.co',
+    publishableKey: 'sb_publishable_IOh-t-a87B1t2r6ROoLrgw_fJ34xVVD',
+  );
   runApp(const MyApp());
+}
+
+final supabase = Supabase.instance.client;
+
+void checkConnection() async {
+  try{
+    await supabase.from('profiles').select().limit(1);
+    debugPrint('Supabase connection successful');
+  } catch(e){
+    debugPrint('Supabase connection failed: $e');
+  }
 }
 
 
@@ -16,8 +34,6 @@ class AppScrollBehavior extends MaterialScrollBehavior {
         PointerDeviceKind.trackpad,
       };
 }
-
-
 
 const List<Game> games = [
       Game(id: 'cat_lady', name: 'Cat Lady'), 
@@ -32,44 +48,49 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Score Tracker',
+      title: 'Board Game Tracker',
       scrollBehavior: AppScrollBehavior(),
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurpleAccent),
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: StreamBuilder<AuthState>(
+        stream: supabase.auth.onAuthStateChange,
+        builder: (context, asyncSnapshot) {
+          final session = supabase.auth.currentSession;
+          if(session != null){
+            return const HomeScreen();
+          }else{
+            return const AuthScreen();
+          }
+        }
+        
+      ),
+      
     );
   }
 }
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen>{
-
   List<Game> displayedGames = [];
-
   @override
   void initState(){
     super.initState();
     displayedGames = games;
   }
-
   void _searchFilter(String query){
     List<Game> filteredGames = [];
-
     if(query.isEmpty){
       filteredGames = games;
     }else {
       filteredGames = games.where((game)=> game.name.toLowerCase().contains(query.toLowerCase())).toList();
-
     }
-
     setState((){
       displayedGames = filteredGames;
     });
@@ -83,7 +104,6 @@ class _HomeScreenState extends State<HomeScreen>{
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
 
       ),
-      
       body: Column(
         children: [
           Padding(
@@ -100,7 +120,6 @@ class _HomeScreenState extends State<HomeScreen>{
              
             ),
           ),
-
           Expanded(
             child: displayedGames.isEmpty ? const Center(
               child: Text('No games found', style: TextStyle(fontSize:18, fontWeight: FontWeight.bold))
@@ -126,7 +145,6 @@ class _HomeScreenState extends State<HomeScreen>{
                       if(displayedGames[index].id == 'cat_lady'){
                         Navigator.push(context, MaterialPageRoute(builder: (context) => const CatLadyScreen()));
                       }
-                      print('Clicked ${displayedGames[index].name}');
                     },
                     child: Center(
                       child: Text(
@@ -144,12 +162,115 @@ class _HomeScreenState extends State<HomeScreen>{
               },
             ),
           ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Sign Out',
+            onPressed: () async {
+              await supabase.auth.signOut();
+            },
+          ),
       ],
     ),
   );
   }
 }
   
+
+class AuthScreen extends StatefulWidget { 
+  const AuthScreen({super.key});
+
+  @override 
+  State<AuthScreen> createState() => _AuthScreenState();
+
+}
+class _AuthScreenState extends State<AuthScreen>{
+  bool _isSignUp = false;
+  bool _isLoading = false; 
+
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
+
+  Future<void> _authenticate() async {
+    setState(() => _isLoading = true);
+    try{ 
+      if(_isSignUp){} 
+        final response = await supabase.auth.signUp(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+        if(response.user != null && _nameController.text.isNotEmpty){
+          await supabase.from('profiles').insert({
+            'id': response.user!.id,
+            'username': _nameController.text.trim(),
+          });
+        } else {
+          await supabase.auth.signInWithPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+          );
+        }
+    } catch(e) {
+      if(!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      if(mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context){
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_isSignUp ? 'Sign Up' : 'Sign In'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if(_isSignUp)
+                TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                ),
+              TextField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+              TextField(
+                controller: _passwordController,
+                decoration: const InputDecoration(labelText: 'Password'),
+                obscureText: true,
+              ),
+              const SizedBox(height: 20),
+              _isLoading 
+                ? const CircularProgressIndicator()
+                : ElevatedButton(
+                    onPressed: _authenticate,
+                    child: Text(_isSignUp ? 'Sign Up' : 'Sign In'),
+                  ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _isSignUp = !_isSignUp;
+                  });
+                },
+                child: Text(_isSignUp ? 'Already have an account? Sign In' : 'Don\'t have an account? Sign Up'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 
 

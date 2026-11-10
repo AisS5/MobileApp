@@ -87,6 +87,7 @@ final List<CatCard> catCards = [
 
 class CatLadyPlayer {
   String name; 
+  Color nameColour; 
   List<CatCard> fedCats = [];
 
   int catnipScore = 0;
@@ -101,7 +102,7 @@ class CatLadyPlayer {
     'Feather Wand': 0,
   };
 
-  CatLadyPlayer({required this.name});
+  CatLadyPlayer({required this.name, this.nameColour = Colors.deepPurpleAccent});
 
   bool get hasMacak => fedCats.any((cat) => cat.id == 'macak');
   int get effectiveCatnipCount => catnipScore + (hasMacak ? 1 : 0);
@@ -285,34 +286,86 @@ class _CatLadyScreenState extends State<CatLadyScreen> {
 
   void _editPlayerName(CatLadyPlayer player) {
     _nameController.text = player.name;
+    Color selectedColour = player.nameColour;
+
+    final List<Color> colourOptions = [
+      Colors.deepPurpleAccent,
+      Colors.indigo,
+      Colors.blue,
+      Colors.teal,
+      Colors.green,
+      Colors.deepOrange,
+      Colors.red,
+      Colors.pinkAccent,
+      Colors.purple,
+    ];
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Player Name'),
-        content: TextField(
-          controller: _nameController,
-          decoration: const InputDecoration(hintText: 'Enter new name'),
-          textCapitalization: TextCapitalization.words,
-          autofocus: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit Player'),
+          content:  SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(hintText: 'Enter new name'),
+                  textCapitalization: TextCapitalization.words,
+                  autofocus: true,
+                ),
+                const SizedBox(height: 20),
+                const Text('Choose Name Color:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: colourOptions.map((color) {
+                    bool isSelected = selectedColour == color;
+                    return GestureDetector(
+                      onTap: () => setDialogState(() => selectedColour = color),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected ? Colors.black : Colors.transparent,
+                            width: 3,
+                          ),
+                        ),
+                        child: isSelected 
+                            ? const Icon(Icons.check, color: Colors.white, size: 20) 
+                            : null,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (_nameController.text.trim().isNotEmpty) {
+                  setState(() {
+                    player.name = _nameController.text.trim();
+                    player.nameColour = selectedColour;
+                  });
+                  _nameController.clear();
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (_nameController.text.trim().isNotEmpty) {
-                setState(() {
-                  player.name = _nameController.text.trim();
-                });
-                _nameController.clear();
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
   }
@@ -699,10 +752,10 @@ class _CatLadyScreenState extends State<CatLadyScreen> {
                           children: [
                             Text(
                               currentPlayer.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.deepPurple,
+                                color: currentPlayer.nameColour,
                               ),
                             ),
                             const SizedBox(width: 6),
