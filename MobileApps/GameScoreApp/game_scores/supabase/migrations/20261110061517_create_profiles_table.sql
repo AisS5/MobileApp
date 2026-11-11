@@ -11,11 +11,12 @@ security definer set search_path = ''
 as $$
 begin
   insert into public.profiles (id, username)
-  values (new.id, new.email);
+  values (new.id, coalesce(nullif(new.raw_user_meta_data ->> 'username', ''), split_part(new.email, '@', 1)));
   return new;
 end;
 $$ language plpgsql;
 
+drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();

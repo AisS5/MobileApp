@@ -7,7 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
-    //url: 'http://10.0.2.2:54321',
+    url: 'http://10.0.2.2:54321',
     //url: 'https://wbvdhxzjcmzlsohsderr.supabase.co',
     publishableKey: 'sb_publishable_IOh-t-a87B1t2r6ROoLrgw_fJ34xVVD',
   );
@@ -24,7 +24,6 @@ void checkConnection() async {
     debugPrint('Supabase connection failed: $e');
   }
 }
-
 
 class AppScrollBehavior extends MaterialScrollBehavior {
   @override
@@ -194,22 +193,23 @@ class _AuthScreenState extends State<AuthScreen>{
   Future<void> _authenticate() async {
     setState(() => _isLoading = true);
     try{ 
-      if(_isSignUp){} 
-        final response = await supabase.auth.signUp(
+      if(_isSignUp){ 
+        if(_nameController.text.trim().isEmpty){
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a Username')));
+          setState(() => _isLoading = false);
+          return;
+        }
+        await supabase.auth.signUp(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+          data: {'username': _nameController.text.trim()},
+        );
+      }else {
+        await supabase.auth.signInWithPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
-        if(response.user != null && _nameController.text.isNotEmpty){
-          await supabase.from('profiles').insert({
-            'id': response.user!.id,
-            'username': _nameController.text.trim(),
-          });
-        } else {
-          await supabase.auth.signInWithPassword(
-            email: _emailController.text.trim(),
-            password: _passwordController.text.trim(),
-          );
-        }
+      }
     } catch(e) {
       if(!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -238,7 +238,7 @@ class _AuthScreenState extends State<AuthScreen>{
               if(_isSignUp)
                 TextField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Name'),
+                  decoration: const InputDecoration(labelText: 'Username'),
                 ),
               TextField(
                 controller: _emailController,
